@@ -2,10 +2,12 @@ import copy
 import glob
 import os
 import time
+import datetime
 
 import gym
 import numpy as np
 import torch
+import tensorboardX
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -13,8 +15,8 @@ from torch.autograd import Variable
 
 from arguments import get_args
 from baselines.common.vec_env.dummy_vec_env import DummyVecEnv
-from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from baselines.common.vec_env.vec_normalize import VecNormalize
+from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
 from envs import make_env
 from kfac import KFACOptimizer
 from model import CNNPolicy, MLPPolicy
@@ -29,6 +31,8 @@ if args.recurrent_policy:
         'Recurrent policy is not implemented for ACKTR'
 
 num_updates = int(args.num_frames) // args.num_steps // args.num_processes
+
+logger = tensorboardX.SummaryWriter('runs/{}-{}'.format(args.env_name, datetime.datetime.now().ctime()))
 
 torch.manual_seed(args.seed)
 if args.cuda:
@@ -62,8 +66,7 @@ def main():
     else:
         envs = DummyVecEnv(envs)
 
-    if len(envs.observation_space.shape) == 1:
-        envs = VecNormalize(envs)
+    envs = VecNormalize(envs)
 
     obs_shape = envs.observation_space.shape
     obs_shape = (obs_shape[0] * args.num_stack, *obs_shape[1:])
@@ -257,7 +260,7 @@ def main():
         if args.vis and j % args.vis_interval == 0:
             try:
                 # Sometimes monitor doesn't properly flush the outputs
-                win = visdom_plot(viz, win, args.log_dir, args.env_name, args.algo)
+                visdom_plot(logger, args.log_dir)
             except IOError:
                 pass
 

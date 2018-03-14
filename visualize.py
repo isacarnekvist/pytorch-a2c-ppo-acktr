@@ -100,40 +100,12 @@ color_defaults = [
 ]
 
 
-def visdom_plot(viz, win, folder, game, name, bin_size=100, smooth=1):
+def visdom_plot(logger, folder, bin_size=100, smooth=1):
     tx, ty = load_data(folder, smooth, bin_size)
     if tx is None or ty is None:
-        return win
+        return
 
-    fig = plt.figure()
-    plt.plot(tx, ty, label="{}".format(name))
-
-    # Ugly hack to detect atari
-    if game.find('NoFrameskip') > -1:
-        plt.xticks([1e6, 2e6, 4e6, 6e6, 8e6, 10e6],
-                   ["1M", "2M", "4M", "6M", "8M", "10M"])
-        plt.xlim(0, 10e6)
-    else:
-        plt.xticks([1e5, 2e5, 4e5, 6e5, 8e5, 1e5],
-                   ["0.1M", "0.2M", "0.4M", "0.6M", "0.8M", "1M"])
-        plt.xlim(0, 1e6)
-
-    plt.xlabel('Number of Timesteps')
-    plt.ylabel('Rewards')
-
-
-    plt.title(game)
-    plt.legend(loc=4)
-    plt.show()
-    plt.draw()
-
-    image = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3, ))
-    plt.close(fig)
-
-    # Show it in visdom
-    image = np.transpose(image, (2, 0, 1))
-    return viz.image(image, win=win)
+    logger.add_scalar('return', ty[-1], tx[-1])
 
 
 if __name__ == "__main__":

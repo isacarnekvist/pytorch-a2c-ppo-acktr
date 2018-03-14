@@ -31,6 +31,7 @@ env = DummyVecEnv([env])
 actor_critic, ob_rms = \
             torch.load(os.path.join(args.load_dir, args.env_name + ".pt"))
 
+actor_critic.eval()
 
 if len(env.observation_space.shape) == 1:
     env = VecNormalize(env, ret=False)

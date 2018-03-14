@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
 from distributions import Categorical, DiagGaussian
 from utils import orthogonal
 
@@ -180,3 +181,4 @@ class MLPPolicy(FFPolicy):
         x = F.tanh(x)
 
         return value, x, states
+
