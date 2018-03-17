@@ -21,7 +21,7 @@ from envs import make_env
 from kfac import KFACOptimizer
 from model import CNNPolicy, MLPPolicy
 from storage import RolloutStorage
-from visualize import visdom_plot
+from visualize import plot
 
 args = get_args()
 
@@ -53,13 +53,14 @@ def main():
 
     os.environ['OMP_NUM_THREADS'] = '1'
 
-    if args.vis:
-        from visdom import Visdom
-        viz = Visdom(port=args.port)
-        win = None
-
-    envs = [make_env(args.env_name, args.seed, i, args.log_dir)
-                for i in range(args.num_processes)]
+    env_params = {
+        'wt': args.euclidean_weight,
+        'x': args.goal_x,
+        'y': args.goal_y,
+        'z': args.goal_z,
+    }
+    envs = [make_env(args.env_name, args.seed, i, args.log_dir, **env_params)
+            for i in range(args.num_processes)]
 
     if args.num_processes > 1:
         envs = SubprocVecEnv(envs)
@@ -115,6 +116,10 @@ def main():
     if args.cuda:
         current_obs = current_obs.cuda()
         rollouts.cuda()
+
+    last_return = -np.inf
+    best_return = -np.inf
+    best_models = None
 
     start = time.time()
     for j in range(num_updates):
@@ -229,7 +234,11 @@ def main():
 
         rollouts.after_update()
 
-        if j % args.save_interval == 0 and args.save_dir != "":
+        if args.vis and j % args.vis_interval == 0:
+            last_return = plot(logger, args.log_dir)
+
+        if last_return > best_return and args.save_dir != "":
+            best_return = last_return
             save_path = os.path.join(args.save_dir, args.algo)
             try:
                 os.makedirs(save_path)
@@ -242,27 +251,23 @@ def main():
                 save_model = copy.deepcopy(actor_critic).cpu()
 
             save_model = [save_model,
-                            hasattr(envs, 'ob_rms') and envs.ob_rms or None]
+                          hasattr(envs, 'ob_rms') and envs.ob_rms or None]
 
-            torch.save(save_model, os.path.join(save_path, args.env_name + ".pt"))
+            model_name = 'goal_x:{:.2f}-goal_y:{:.2f}-goal_z:{:.2f}-wt:{:.2f}.pt'.format(args.goal_x,
+                                                                                         args.goal_y,
+                                                                                         args.goal_z,
+                                                                                         args.euclidean_weight)
+            torch.save(save_model, os.path.join(save_path, model_name))
 
         if j % args.log_interval == 0:
             end = time.time()
             total_num_steps = (j + 1) * args.num_processes * args.num_steps
-            print("Updates {}, num timesteps {}, FPS {}, mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}, entropy {:.5f}, value loss {:.5f}, policy loss {:.5f}".
-                format(j, total_num_steps,
-                       int(total_num_steps / (end - start)),
-                       final_rewards.mean(),
-                       final_rewards.median(),
-                       final_rewards.min(),
-                       final_rewards.max(), dist_entropy.data[0],
-                       value_loss.data[0], action_loss.data[0]))
-        if args.vis and j % args.vis_interval == 0:
-            try:
-                # Sometimes monitor doesn't properly flush the outputs
-                visdom_plot(logger, args.log_dir)
-            except IOError:
-                pass
+            print("Updates {}, num timesteps {}, FPS {}, average return {:.5f}, best_return {:.5f}, value loss {:.5f}, policy loss {:.5f}".
+                  format(j, total_num_steps,
+                         int(total_num_steps / (end - start)),
+                         last_return, best_return,
+                         value_loss.data[0], action_loss.data[0]))
+
 
 if __name__ == "__main__":
     main()

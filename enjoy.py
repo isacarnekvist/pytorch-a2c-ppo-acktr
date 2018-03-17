@@ -12,24 +12,33 @@ from envs import make_env
 
 
 parser = argparse.ArgumentParser(description='RL')
+parser.add_argument('load_path',
+                    help='path to saved agent parameters')
 parser.add_argument('--seed', type=int, default=1,
                     help='random seed (default: 1)')
-parser.add_argument('--num-stack', type=int, default=4,
-                    help='number of frames to stack (default: 4)')
+parser.add_argument('--num-stack', type=int, default=1,
+                    help='number of frames to stack (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10,
                     help='log interval, one log per n updates (default: 10)')
-parser.add_argument('--env-name', default='PongNoFrameskip-v4',
-                    help='environment to train on (default: PongNoFrameskip-v4)')
-parser.add_argument('--load-dir', default='./trained_models/',
-                    help='directory to save agent logs (default: ./trained_models/)')
+parser.add_argument('--env-name', default='YumiReacher-v0',
+                    help='environment to train on (default: YumiReacher-v0)')
+parser.add_argument('--goal-x', type=float, default=0.0,
+                    help='goal x-position (default: 0.0)')
+parser.add_argument('--goal-y', type=float, default=0.0,
+                    help='goal y-position (default: 0.0)')
+parser.add_argument('--goal-z', type=float, default=0.2,
+                    help='goal z-position (default: 0.2)')
 args = parser.parse_args()
 
-
-env = make_env(args.env_name, args.seed, 0, None)
+env_params = {
+    'x': args.goal_x,
+    'y': args.goal_y,
+    'z': args.goal_z,
+}
+env = make_env(args.env_name, args.seed, 0, None, **env_params)
 env = DummyVecEnv([env])
 
-actor_critic, ob_rms = \
-            torch.load(os.path.join(args.load_dir, args.env_name + ".pt"))
+actor_critic, ob_rms = torch.load(os.path.join(args.load_path))
 
 actor_critic.eval()
 

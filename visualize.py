@@ -100,15 +100,13 @@ color_defaults = [
 ]
 
 
-def visdom_plot(logger, folder, bin_size=100, smooth=1):
+def plot(logger, folder, bin_size=100, smooth=1):
+    """
+    :return: Last average return if available, else -inf
+    """
     tx, ty = load_data(folder, smooth, bin_size)
     if tx is None or ty is None:
-        return
+        return -np.inf
 
     logger.add_scalar('return', ty[-1], tx[-1])
-
-
-if __name__ == "__main__":
-    from visdom import Visdom
-    viz = Visdom()
-    visdom_plot(viz, None, '/tmp/gym/', 'BreakOut', 'a2c', bin_size=100, smooth=1)
+    return ty[-1]

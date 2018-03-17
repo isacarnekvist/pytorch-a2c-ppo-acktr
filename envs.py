@@ -13,9 +13,10 @@ except ImportError:
     pass
 
 
-def make_env(env_id, seed, rank, log_dir):
+def make_env(env_id, seed, rank, log_dir, **env_init_params):
     def _thunk():
         env = gym.make(env_id)
+        env.env.init_params(**env_init_params)
         is_atari = hasattr(gym.envs, 'atari') and isinstance(env.unwrapped, gym.envs.atari.atari_env.AtariEnv)
         if is_atari:
             env = make_atari(env_id)
