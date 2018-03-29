@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import types
 
 import numpy as np
@@ -31,33 +32,18 @@ parser.add_argument('--goal-z', type=float, default=0.2,
 args = parser.parse_args()
 
 env_params = {
-    'x': args.goal_x,
-    'y': args.goal_y,
-    'z': args.goal_z,
+    'x': float(re.findall('goal_x:(-?\d\.\d+)', args.load_path)[0]),
+    'y': float(re.findall('goal_y:(-?\d\.\d+)', args.load_path)[0]),
+    'z': float(re.findall('goal_z:(-?\d\.\d+)', args.load_path)[0]),
 }
 env = make_env(args.env_name, args.seed, 0, None, **env_params)
 env = DummyVecEnv([env])
 
-actor_critic, ob_rms = torch.load(os.path.join(args.load_path))
+actor_critic = torch.load(os.path.join(args.load_path))
 
 actor_critic.eval()
 
-if len(env.observation_space.shape) == 1:
-    env = VecNormalize(env, ret=False)
-    env.ob_rms = ob_rms
-
-    # An ugly hack to remove updates
-    def _obfilt(self, obs):
-        if self.ob_rms:
-            obs = np.clip((obs - self.ob_rms.mean) / np.sqrt(self.ob_rms.var + self.epsilon), -self.clipob, self.clipob)
-            return obs
-        else:
-            return obs
-    env._obfilt = types.MethodType(_obfilt, env)
-    render_func = env.venv.envs[0].render
-else:
-    render_func = env.envs[0].render
-
+render_func = env.envs[0].render
 obs_shape = env.observation_space.shape
 obs_shape = (obs_shape[0] * args.num_stack, *obs_shape[1:])
 current_obs = torch.zeros(1, *obs_shape)

@@ -67,6 +67,8 @@ def get_args():
                         help='goal y-position (default: 0.0)')
     parser.add_argument('--goal-z', type=float, default=0.2,
                         help='goal z-position (default: 0.2)')
+    parser.add_argument('--random-task', action='store_true', default=False,
+                        help='randomly assign wt, x, y, z')
     args = parser.parse_args()
 
     args.cuda = not args.no_cuda and torch.cuda.is_available()

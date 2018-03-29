@@ -6,6 +6,30 @@ from distributions import Categorical, DiagGaussian
 from utils import orthogonal
 
 
+class WelfordNormalization(torch.nn.Module):
+
+    def __init__(self, num_features):
+        super(WelfordNormalization, self).__init__()
+        self.count = 0
+        self.register_buffer('mean', torch.zeros(num_features))
+        self.register_buffer('M2', torch.zeros(num_features))
+
+    def update(self, x):
+        for n in range(x.size(0)):
+            self.count += 1
+            delta1 = x[n, :] - self.mean
+            self.mean += delta1 / self.count
+            delta2 = x[n, :] - self.mean
+            self.M2 += delta1 * delta2
+
+    @property
+    def variance(self):
+        return self.M2 / (self.count - 1)
+
+    def forward(self, x):
+        return (x - Variable(self.mean)) / (Variable(self.variance) ** 0.5 + 1e-9)
+
+
 def weights_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1 or classname.find('Linear') != -1:
@@ -127,6 +151,8 @@ class MLPPolicy(FFPolicy):
 
         self.action_space = action_space
 
+        self.input_norm = WelfordNormalization(num_inputs)
+
         self.a_fc1 = nn.Linear(num_inputs, 64)
         self.a_fc2 = nn.Linear(64, 64)
 
@@ -165,7 +191,8 @@ class MLPPolicy(FFPolicy):
             self.dist.fc_mean.weight.data.mul_(0.01)
 
     def forward(self, inputs, states, masks):
-        x = self.v_fc1(inputs)
+        normed = self.input_norm(inputs)
+        x = self.v_fc1(normed)
         x = F.tanh(x)
 
         x = self.v_fc2(x)

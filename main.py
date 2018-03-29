@@ -47,18 +47,26 @@ except OSError:
 
 
 def main():
-    print("#######")
-    print("WARNING: All rewards are clipped or normalized so you need to use a monitor (see envs.py) or visdom plot to get true rewards")
-    print("#######")
+    print("######")
+    print("HELLO! Returns start with infinity values")
+    print("######")
 
     os.environ['OMP_NUM_THREADS'] = '1'
 
-    env_params = {
-        'wt': args.euclidean_weight,
-        'x': args.goal_x,
-        'y': args.goal_y,
-        'z': args.goal_z,
-    }
+    if args.random_task:
+        env_params = {
+            'wt': np.round(np.random.uniform(0.5, 1.0), 2),
+            'x': np.round(np.random.uniform(-0.2, 0.0), 2),
+            'y': np.round(np.random.uniform(-0.1, 0.1), 2),
+            'z': np.round(np.random.uniform(0.1, 0.2), 2),
+        }
+    else:
+        env_params = {
+            'wt': args.euclidean_weight,
+            'x': args.goal_x,
+            'y': args.goal_y,
+            'z': args.goal_z,
+        }
     envs = [make_env(args.env_name, args.seed, i, args.log_dir, **env_params)
             for i in range(args.num_processes)]
 
@@ -67,7 +75,7 @@ def main():
     else:
         envs = DummyVecEnv(envs)
 
-    envs = VecNormalize(envs)
+    envs = VecNormalize(envs, ob=False)
 
     obs_shape = envs.observation_space.shape
     obs_shape = (obs_shape[0] * args.num_stack, *obs_shape[1:])
@@ -117,6 +125,8 @@ def main():
         current_obs = current_obs.cuda()
         rollouts.cuda()
 
+    actor_critic.input_norm.update(rollouts.observations[0])
+
     last_return = -np.inf
     best_return = -np.inf
     best_models = None
@@ -151,6 +161,7 @@ def main():
 
             update_current_obs(obs)
             rollouts.insert(step, current_obs, states.data, action.data, action_log_prob.data, value.data, reward, masks)
+            actor_critic.input_norm.update(rollouts.observations[step + 1])
 
         next_value = actor_critic(Variable(rollouts.observations[-1], volatile=True),
                                   Variable(rollouts.states[-1], volatile=True),
@@ -250,13 +261,10 @@ def main():
             if args.cuda:
                 save_model = copy.deepcopy(actor_critic).cpu()
 
-            save_model = [save_model,
-                          hasattr(envs, 'ob_rms') and envs.ob_rms or None]
-
-            model_name = 'goal_x:{:.2f}-goal_y:{:.2f}-goal_z:{:.2f}-wt:{:.2f}.pt'.format(args.goal_x,
-                                                                                         args.goal_y,
-                                                                                         args.goal_z,
-                                                                                         args.euclidean_weight)
+            model_name = 'goal_x:{:.2f}-goal_y:{:.2f}-goal_z:{:.2f}-wt:{:.2f}.pt'.format(env_params['x'],
+                                                                                         env_params['y'],
+                                                                                         env_params['z'],
+                                                                                         env_params['wt'])
             torch.save(save_model, os.path.join(save_path, model_name))
 
         if j % args.log_interval == 0:
