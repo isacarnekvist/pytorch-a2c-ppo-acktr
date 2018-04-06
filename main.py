@@ -248,24 +248,24 @@ def main():
         if args.vis and j % args.vis_interval == 0:
             last_return = plot(logger, args.log_dir)
 
-        if last_return > best_return and args.save_dir != "":
+        if last_return > best_return:
             best_return = last_return
-            save_path = os.path.join(args.save_dir, args.algo)
             try:
-                os.makedirs(save_path)
+                os.makedirs(os.path.dirname(args.save_path))
             except OSError:
                 pass
+
+            info = {
+                'return': best_return,
+                'reward_norm': np.sqrt(envs.ret_rms.var + envs.epsilon)
+            }
 
             # A really ugly way to save a model to CPU
             save_model = actor_critic
             if args.cuda:
                 save_model = copy.deepcopy(actor_critic).cpu()
 
-            model_name = 'goal_x:{:.2f}-goal_y:{:.2f}-goal_z:{:.2f}-wt:{:.2f}.pt'.format(env_params['x'],
-                                                                                         env_params['y'],
-                                                                                         env_params['z'],
-                                                                                         env_params['wt'])
-            torch.save(save_model, os.path.join(save_path, model_name))
+            torch.save((save_model, env_params, info), args.save_path)
 
         if j % args.log_interval == 0:
             end = time.time()

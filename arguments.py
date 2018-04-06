@@ -5,6 +5,7 @@ import torch
 
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
+    parser.add_argument('save_path', help='directory to save agent logs')
     parser.add_argument('--algo', default='ppo',
                         help='algorithm to use: a2c | ppo | acktr')
     parser.add_argument('--lr', type=float, default=3e-4,
@@ -28,7 +29,7 @@ def get_args():
     parser.add_argument('--seed', type=int, default=1,
                         help='random seed (default: 1)')
     parser.add_argument('--num-processes', type=int, default=2,
-                        help='how many training CPU processes to use (default: 16)')
+                        help='how many training CPU processes to use (default: 2)')
     parser.add_argument('--num-steps', type=int, default=2048,
                         help='number of roll-out steps (default: 2048)')
     parser.add_argument('--ppo-epoch', type=int, default=10,
@@ -49,8 +50,6 @@ def get_args():
                         help='environment to train on (default: YumiReacher-v0)')
     parser.add_argument('--log-dir', default='/tmp/gym/',
                         help='directory to save agent logs (default: /tmp/gym)')
-    parser.add_argument('--save-dir', default='./trained_models/',
-                        help='directory to save agent logs (default: ./trained_models/)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--recurrent-policy', action='store_true', default=False,

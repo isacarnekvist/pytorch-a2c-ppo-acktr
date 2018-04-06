@@ -31,17 +31,13 @@ parser.add_argument('--goal-z', type=float, default=0.2,
                     help='goal z-position (default: 0.2)')
 args = parser.parse_args()
 
-env_params = {
-    'x': float(re.findall('goal_x:(-?\d\.\d+)', args.load_path)[0]),
-    'y': float(re.findall('goal_y:(-?\d\.\d+)', args.load_path)[0]),
-    'z': float(re.findall('goal_z:(-?\d\.\d+)', args.load_path)[0]),
-}
+actor_critic, env_params, info = torch.load(os.path.join(args.load_path))
+print(env_params)
+print(info)
+actor_critic.eval()
+
 env = make_env(args.env_name, args.seed, 0, None, **env_params)
 env = DummyVecEnv([env])
-
-actor_critic = torch.load(os.path.join(args.load_path))
-
-actor_critic.eval()
 
 render_func = env.envs[0].render
 obs_shape = env.observation_space.shape
