@@ -5,7 +5,7 @@ import torch
 
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
-    parser.add_argument('save_path', help='directory to save agent logs')
+    parser.add_argument('save_path', help='filename to save trained model as')
     parser.add_argument('--algo', default='ppo',
                         help='algorithm to use: a2c | ppo | acktr')
     parser.add_argument('--lr', type=float, default=3e-4,
