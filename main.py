@@ -56,9 +56,9 @@ def main():
     if args.random_task:
         env_params = {
             'wt': np.round(np.random.uniform(0.5, 1.0), 2),
-            'x': np.round(np.random.uniform(-0.2, 0.0), 2),
+            'x': np.round(np.random.uniform(-0.1, 0.1), 2),
             'y': np.round(np.random.uniform(-0.1, 0.1), 2),
-            'z': np.round(np.random.uniform(0.1, 0.2), 2),
+            'z': np.round(np.random.uniform(0.15, 0.2), 2),
         }
     else:
         env_params = {
