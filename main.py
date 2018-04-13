@@ -32,7 +32,7 @@ if args.recurrent_policy:
 
 num_updates = int(args.num_frames) // args.num_steps // args.num_processes
 
-logger = tensorboardX.SummaryWriter('runs/{}-{}'.format(args.env_name, datetime.datetime.now().ctime()))
+logger = tensorboardX.SummaryWriter('runs/{}'.format(os.path.basename(args.save_path)))
 
 torch.manual_seed(args.seed)
 if args.cuda:
