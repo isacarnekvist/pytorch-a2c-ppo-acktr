@@ -20,7 +20,7 @@ if __name__ == '__main__':
         z = np.round(np.random.uniform(0.15, 0.2), 2)
         for model in range(args.models_per_task):
             model_id = 'reacher_{}_{}.pt'.format(task, model)
-            print('python main.py {} --goal-x {} --goal-y {} --goal-z {} --euclidean-weight {} --num-processes 8 --num-frames 3000000'.format(
+            print('python main.py {} --goal-x {} --goal-y {} --goal-z {} --euclidean-weight {} --num-processes 8 --num-frames 4000000'.format(
                 os.path.join(args.save_directory, model_id),
                 x,
                 y,
